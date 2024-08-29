@@ -1,4 +1,3 @@
-"use server";
 import { GetServerSideProps } from "next";
 import { parseCookies } from "nookies";
 import jwt from "jsonwebtoken";
@@ -13,13 +12,12 @@ export default function AdminDashboard() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { req } = context;
   const cookies = parseCookies(context);
-
   const token = cookies.token;
 
-  // Debug: Log the token
+  // Debug: Log the token and environment variables
   console.log("Token from cookies:", token);
+  console.log("JWT_SECRET from env:", process.env.JWT_SECRET);
 
   if (!token) {
     console.log("No token found, redirecting to login");
