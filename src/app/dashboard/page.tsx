@@ -1,7 +1,38 @@
-import React from "react";
+// app/dashboard/page.tsx
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { redirect } from "next/navigation";
 
-const page = () => {
-  return <div>Normal Dashboard</div>;
-};
+export default async function DashboardPage() {
+  const cookieStore = cookies();
+  const token = cookieStore.get("token")?.value;
 
-export default page;
+  if (!token) {
+    redirect("/login");
+  }
+
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+    const role = decoded.role;
+
+    if (role === "admin") {
+      return (
+        <div>
+          <h1>Admin Dashboard</h1>
+          {/* Admin-specific content */}
+        </div>
+      );
+    } else if (role === "teamMember") {
+      return (
+        <div>
+          <h1>Team Member Dashboard</h1>
+          {/* Team Member-specific content */}
+        </div>
+      );
+    } else {
+      redirect("/login");
+    }
+  } catch (error) {
+    redirect("/login");
+  }
+}

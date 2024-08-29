@@ -15,7 +15,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const cookies = parseCookies(context);
   const token = cookies.token;
 
-  // Debug: Log the token and environment variables
   console.log("Token from cookies:", token);
   console.log("JWT_SECRET from env:", process.env.JWT_SECRET);
 
@@ -44,7 +43,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
 
     return {
-      props: {}, // Pass any props required by the page
+      props: {},
     };
   } catch (error: any) {
     console.error("JWT verification failed:", error.message);

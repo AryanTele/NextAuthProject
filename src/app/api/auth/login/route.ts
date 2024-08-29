@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 3600, // 1 hour
+      maxAge: 86400, // 1 day
       path: "/",
     });
 
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       },
       { status: 200, headers: { "Set-Cookie": cookie } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
