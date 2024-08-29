@@ -1,4 +1,4 @@
-import User from "@/models/userModel";
+import User from "@/models/User";
 import nodemailer from "nodemailer";
 import bcryptjs from "bcryptjs";
 
