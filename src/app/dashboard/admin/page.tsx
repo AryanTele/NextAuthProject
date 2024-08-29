@@ -1,8 +1,7 @@
-// Import required modules
+"use server";
 import { GetServerSideProps } from "next";
 import { parseCookies } from "nookies";
 import jwt from "jsonwebtoken";
-import { NextResponse } from "next/server";
 
 export default function AdminDashboard() {
   return (
@@ -19,7 +18,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const token = cookies.token;
 
+  // Debug: Log the token
+  console.log("Token from cookies:", token);
+
   if (!token) {
+    console.log("No token found, redirecting to login");
     return {
       redirect: {
         destination: "/login",
@@ -30,7 +33,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   try {
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+    console.log("Decoded JWT:", decoded);
+
     if (decoded.role !== "admin") {
+      console.log("User is not admin, redirecting to dashboard");
       return {
         redirect: {
           destination: "/dashboard",
@@ -40,9 +46,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
 
     return {
-      props: {},
+      props: {}, // Pass any props required by the page
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error("JWT verification failed:", error.message);
     return {
       redirect: {
         destination: "/login",
