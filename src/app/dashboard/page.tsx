@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -12,8 +12,13 @@ export default async function DashboardPage() {
   }
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
-    const role = decoded.role;
+    // Verify JWT using `jose`
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.JWT_SECRET as string)
+    );
+
+    const role = payload.role as string;
 
     if (role === "admin") {
       return (
@@ -33,6 +38,7 @@ export default async function DashboardPage() {
       redirect("/login");
     }
   } catch (error) {
+    console.error("JWT verification failed:", error);
     redirect("/login");
   }
 }

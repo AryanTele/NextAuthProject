@@ -1,6 +1,6 @@
 import { GetServerSideProps } from "next";
 import { parseCookies } from "nookies";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 
 export default function AdminDashboard() {
   return (
@@ -29,10 +29,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
-    console.log("Decoded JWT:", decoded);
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.JWT_SECRET as string)
+    );
+    console.log("Decoded JWT:", payload);
 
-    if (decoded.role !== "admin") {
+    if (payload.role !== "admin") {
       console.log("User is not admin, redirecting to dashboard");
       return {
         redirect: {

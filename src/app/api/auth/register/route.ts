@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/config/mongoose"; // Adjust the import path as needed
 import User from "@/models/User"; // Adjust the import path as needed
 import bcryptjs from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { SignJWT } from "jose";
 
 // POST /api/auth/register
 export async function POST(req: Request) {
@@ -10,6 +10,7 @@ export async function POST(req: Request) {
 
   try {
     await dbConnect();
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -32,11 +33,13 @@ export async function POST(req: Request) {
     await newUser.save();
 
     // Generate JWT
-    const token = jwt.sign(
-      { userId: newUser._id, email: newUser.email, role: newUser.role },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1d" }
-    );
+    const token = await new SignJWT({
+      userId: newUser._id!.toString(), // Ensure _id is a string
+      email: newUser.email,
+      role: newUser.role,
+    })
+      .setExpirationTime("1d")
+      .sign(new TextEncoder().encode(process.env.JWT_SECRET as string));
 
     return NextResponse.json(
       {

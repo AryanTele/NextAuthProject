@@ -1,11 +1,13 @@
 import { NextApiRequest, NextApiResponse, NextApiHandler } from "next";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
+
+interface JwtPayload {
+  userId: string;
+  role: string;
+}
 
 export interface AuthenticatedNextApiRequest extends NextApiRequest {
-  user?: {
-    userId: string;
-    role: string;
-  };
+  user?: JwtPayload;
 }
 
 export function auth(handler: NextApiHandler) {
@@ -16,8 +18,13 @@ export function auth(handler: NextApiHandler) {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      req.user = { userId: decoded.userId, role: decoded.role };
+      // Verify the token with the secret
+      const { payload } = (await jwtVerify(
+        token,
+        new TextEncoder().encode(process.env.JWT_SECRET as string)
+      )) as { payload: JwtPayload };
+
+      req.user = { userId: payload.userId, role: payload.role };
       return handler(req, res);
     } catch (error) {
       return res.status(401).json({ message: "Unauthorized" });

@@ -1,8 +1,7 @@
-// Import required modules
+// app/dashboard/team/page.tsx
 import { GetServerSideProps } from "next";
 import { parseCookies } from "nookies";
-import jwt from "jsonwebtoken";
-import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
 export default function TeamMemberDashboard() {
   return (
@@ -14,12 +13,14 @@ export default function TeamMemberDashboard() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { req } = context;
   const cookies = parseCookies(context);
-
   const token = cookies.token;
 
+  console.log("Token from cookies:", token);
+  console.log("JWT_SECRET from env:", process.env.JWT_SECRET);
+
   if (!token) {
+    console.log("No token found, redirecting to login");
     return {
       redirect: {
         destination: "/login",
@@ -29,8 +30,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
-    if (decoded.role !== "teamMember") {
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.JWT_SECRET as string)
+    );
+    console.log("Decoded JWT:", payload);
+
+    if (payload.role !== "teamMember") {
+      console.log("User is not a team member, redirecting to dashboard");
       return {
         redirect: {
           destination: "/dashboard",
@@ -42,7 +49,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
       props: {},
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error("JWT verification failed:", error.message);
     return {
       redirect: {
         destination: "/login",

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
@@ -16,15 +16,18 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
-      console.log("Decoded JWT:", decoded); // Debug log
+      const { payload } = await jwtVerify(
+        token,
+        new TextEncoder().encode(process.env.JWT_SECRET as string)
+      );
+      console.log("Decoded JWT:", payload); // Debug log
 
-      if (url.pathname === "/dashboard/admin" && decoded.role !== "admin") {
+      if (url.pathname === "/dashboard/admin" && payload.role !== "admin") {
         console.log("User is not admin, redirecting to /dashboard");
         url.pathname = "/dashboard";
         return NextResponse.redirect(url);
       }
-      if (url.pathname === "/dashboard/team" && decoded.role !== "teamMember") {
+      if (url.pathname === "/dashboard/team" && payload.role !== "teamMember") {
         console.log("User is not team member, redirecting to /dashboard");
         url.pathname = "/dashboard";
         return NextResponse.redirect(url);
