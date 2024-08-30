@@ -1,62 +1,43 @@
-import { NextResponse } from "next/server";
-import dbConnect from "@/config/mongoose";
-import User from "@/models/User";
-import bcryptjs from "bcryptjs";
-import { SignJWT } from "jose";
-import { serialize } from "cookie";
-import { Types } from "mongoose";
+import { NextResponse, NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export async function POST(req: Request) {
-  const { email, password, role, name } = await req.json();
+export async function middleware(req: NextRequest) {
+  const token = req.cookies.get("token")?.value;
+
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
   try {
-    await dbConnect();
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.JWT_SECRET as string)
+    );
+    const { role } = payload;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json(
-        { message: "User already exists" },
-        { status: 400 }
-      );
+    // Example paths; adjust according to your needs
+    const url = req.nextUrl.clone();
+    if (url.pathname.startsWith("/admin-dashboard")) {
+      if (role !== "admin") {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    } else if (url.pathname.startsWith("/member-dashboard")) {
+      if (role !== "member") {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
     }
 
-    const hashedPassword = await bcryptjs.hash(password, 10);
-
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      role,
-      name,
-    });
-    await newUser.save();
-
-    const token = await new SignJWT({
-      userId: newUser._id.toString(),
-      email: newUser.email,
-      role: newUser.role,
-    })
-      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-      .setExpirationTime("1d")
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET as string));
-
-    const cookie = serialize("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 86400, // 1 day
-      path: "/",
-    });
-
-    return NextResponse.json(
-      {
-        message: "User registered successfully",
-        token,
-        user: { email: newUser.email, role: newUser.role, name: newUser.name },
-      },
-      { status: 201, headers: { "Set-Cookie": cookie } }
-    );
+    return NextResponse.next();
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 }
+
+export const config = {
+  matcher: [
+    "/dashboard/:path*",
+    "/admin-dashboard/:path*",
+    "/member-dashboard/:path*",
+  ],
+};

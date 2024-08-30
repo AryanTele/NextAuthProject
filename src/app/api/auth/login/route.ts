@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       email: user.email,
       role: user.role,
     })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" }) // Ensure this is called before sign()
       .setExpirationTime("1d")
       .sign(new TextEncoder().encode(process.env.JWT_SECRET as string));
 

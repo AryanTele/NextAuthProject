@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, model, Model } from "mongoose";
 
 // Interface representing a User document in MongoDB
 export interface IUser extends Document {
-  _id: mongoose.Types.ObjectId; // Explicitly define _id as ObjectId
+  _id: string;
   email: string;
   password: string;
   role: "admin" | "teamMember"; // Enums to define user roles
