@@ -1,18 +1,20 @@
-import mongoose, { Schema, Document, model, models } from "mongoose";
+// src/models/Product.ts
+import mongoose, { Schema, Document } from "mongoose";
 
-export interface IProduct extends Document {
-  _id: string;
+interface IProduct extends Document {
   title: string;
   description: string;
   price: number;
-  imageUrl: string;
+  imageUrl: string[];
 }
 
 const ProductSchema: Schema = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true },
-  imageUrl: { type: String, required: true },
+  imageUrl: { type: [String], required: true },
 });
 
-export default models.Product || model<IProduct>("Product", ProductSchema);
+const Product =
+  mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);
+export default Product;
