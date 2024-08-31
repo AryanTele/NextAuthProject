@@ -2,12 +2,57 @@
 import { GetServerSideProps } from "next";
 import { parseCookies } from "nookies";
 import { jwtVerify } from "jose";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import axios from "axios";
+
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  images: string[];
+}
 
 export default function TeamMemberDashboard() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true); // Loading state to handle UI while fetching data
+  const [error, setError] = useState<string | null>(null); // Error state to handle errors
+
+  useEffect(() => {
+    // Fetch the list of products from your API
+    axios
+      .get("/api/products")
+      .then((response) => {
+        setProducts(response.data);
+        setLoading(false); // Set loading to false after fetching data
+      })
+      .catch((err) => {
+        console.error("Error fetching products:", err);
+        setError("Failed to load products");
+        setLoading(false); // Set loading to false even if there's an error
+      });
+  }, []);
+
   return (
     <div>
       <h1>Team Member Dashboard</h1>
-      {/* Team Member-specific content */}
+      {loading ? (
+        <p>Loading products...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : (
+        <ul>
+          {products.map((product) => (
+            <li key={product._id}>
+              <Link href={`/dashboard/team/product/${product._id}`}>
+                {/* Wrapping Link with an anchor tag */}
+                <a>{product.name}</a>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
