@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/config/mongoose"; // Adjust the import path as needed
-import User from "@/models/User"; // Adjust the import path as needed
+import dbConnect from "@/config/mongoose";
+import User from "@/models/User";
 import bcryptjs from "bcryptjs";
 import { SignJWT } from "jose";
+import { serialize } from "cookie";
+import { Types } from "mongoose";
 
-// POST /api/auth/register
 export async function POST(req: Request) {
   const { email, password, role, name } = await req.json();
 
   try {
     await dbConnect();
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
@@ -20,10 +20,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
 
-    // Create user
     const newUser = new User({
       email,
       password: hashedPassword,
@@ -32,14 +30,26 @@ export async function POST(req: Request) {
     });
     await newUser.save();
 
-    // Generate JWT
+    // Ensure the secret is correctly encoded
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
+
     const token = await new SignJWT({
-      userId: newUser._id!.toString(), // Ensure _id is a string
+      userId: newUser._id.toString(),
       email: newUser.email,
       role: newUser.role,
     })
-      .setExpirationTime("1d")
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET as string));
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" }) // Correctly set the protected header
+      .setIssuedAt() // Optionally add issued at time
+      .setExpirationTime("1d") // Set expiration time
+      .sign(secret); // Pass the encoded secret
+
+    const cookie = serialize("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 86400, // 1 day
+      path: "/",
+    });
 
     return NextResponse.json(
       {
@@ -47,7 +57,7 @@ export async function POST(req: Request) {
         token,
         user: { email: newUser.email, role: newUser.role, name: newUser.name },
       },
-      { status: 201 }
+      { status: 201, headers: { "Set-Cookie": cookie } }
     );
   } catch (error) {
     console.error(error);
