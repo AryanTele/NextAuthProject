@@ -15,29 +15,49 @@ export async function middleware(req: NextRequest) {
     );
     const { role } = payload;
 
-    // Example paths; adjust according to your needs
+    // Clone the URL to modify it
     const url = req.nextUrl.clone();
+
     if (url.pathname.startsWith("/admin-dashboard")) {
       if (role !== "admin") {
+        // Redirect to login if not admin
         return NextResponse.redirect(new URL("/login", req.url));
       }
-    } else if (url.pathname.startsWith("/member-dashboard")) {
-      if (role !== "member") {
+    } else if (url.pathname.startsWith("/team-dashboard")) {
+      if (role !== "teamMember") {
+        // Redirect to login if not a team member
         return NextResponse.redirect(new URL("/login", req.url));
       }
+    } else if (url.pathname.startsWith("/dashboard")) {
+      // Redirect to the appropriate dashboard based on the role
+      if (role === "admin") {
+        return NextResponse.redirect(
+          new URL("ashboard/admin-dashboard", req.url)
+        );
+      } else if (role === "teamMember") {
+        return NextResponse.redirect(
+          new URL("dashboard/team-dashboard", req.url)
+        );
+      } else {
+        // Redirect to login if role does not match
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+    } else {
+      // Handle other paths or redirect to login
+      return NextResponse.redirect(new URL("/login", req.url));
     }
 
     return NextResponse.next();
   } catch (error) {
-    console.error(error);
+    console.error("JWT verification failed:", error);
     return NextResponse.redirect(new URL("/login", req.url));
   }
 }
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
     "/admin-dashboard/:path*",
-    "/member-dashboard/:path*",
+    "/team-dashboard/:path*",
+    "/dashboard/:path*",
   ],
 };
